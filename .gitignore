@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+.pytest_cache/
+
+# Datos locales del usuario: perfiles de navegador, ejecuciones y bots
+.wtb/
+runs/
+bots/
+!examples/**

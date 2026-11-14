@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Alta de empleado — Demo</title>
+<style>
+  body { font: 15px system-ui, sans-serif; margin: 40px; }
+  label { display: block; margin: 10px 0 4px; }
+  .spinner { width: 40px; height: 40px; border: 4px solid #ccc; border-top-color: #333; border-radius: 50%;
+             animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading { position: fixed; inset: 0; background: rgba(255,255,255,.8); display: flex;
+             align-items: center; justify-content: center; font-size: 22px; }
+  #cv { display: none; }
+  iframe { width: 420px; height: 110px; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<h1>Alta de empleado</h1>
+<div id="app"><div class="spinner"></div></div>
+
+<script>
+// The form is built late on purpose: the bot must wait for it.
+setTimeout(() => {
+  const btnId = 'btn-' + Math.floor(10000 + Math.random() * 89999);   // changes on every load
+  document.getElementById('app').innerHTML = `
+    <form id="f" onsubmit="return false">
+      <label for="nombre">Nombre</label><input id="nombre" name="nombre">
+      <label for="apellido">Apellido</label><input id="apellido" name="apellido">
+      <input name="email" type="email" placeholder="correo@empresa.com" style="display:block;margin-top:14px">
+      <label for="depto">Departamento</label>
+      <select id="depto" name="depto">
+        <option value="">-- elegir --</option>
+        <option value="IT">Tecnología</option>
+        <option value="RH">Recursos Humanos</option>
+        <option value="VEN">Ventas</option>
+      </select>
+      <label for="ingreso">Fecha de ingreso</label><input id="ingreso" name="ingreso" type="date">
+      <fieldset style="margin-top:12px"><legend>Jornada</legend>
+        <input type="radio" id="jornada-completa" name="jornada" value="completa"><label for="jornada-completa" style="display:inline">Completa</label>
+        <input type="radio" id="jornada-parcial" name="jornada" value="parcial"><label for="jornada-parcial" style="display:inline">Parcial</label>
+      </fieldset>
+      <label><input type="checkbox" name="contrato"> Contrato firmado</label>
+      <div style="margin-top:12px">
+        <input type="file" id="cv" name="cv">
+        <button type="button" onclick="document.getElementById('cv').click()">Adjuntar CV</button>
+        <span id="cv-name"></span>
+      </div>
+      <p>Notas:</p>
+      <iframe id="notas" src="notes.html"></iframe>
+      <p><button type="button" id="${btnId}" class="btn-primary">Guardar</button></p>
+    </form>`;
+  document.getElementById('cv').addEventListener('change', (e) => {
+    document.getElementById('cv-name').textContent = e.target.files[0] ? e.target.files[0].name : '';
+  });
+  document.getElementById(btnId).addEventListener('click', save);
+}, 1200);
+
+async function save() {
+  if (!confirm('¿Guardar el empleado?')) return;
+  const f = document.getElementById('f');
+  const data = new FormData(f);
+  data.set('contrato', f.contrato.checked ? 'si' : 'no');
+  data.set('observaciones', document.getElementById('notas').contentWindow.document.getElementById('obs').value);
+  const overlay = document.createElement('div');
+  overlay.className = 'loading';
+  overlay.textContent = 'Guardando…';
+  document.body.appendChild(overlay);
+  await new Promise((r) => setTimeout(r, 900));
+  const res = await fetch('/api/empleados', { method: 'POST', body: data });
+  const json = await res.json();
+  overlay.remove();
+  document.getElementById('app').innerHTML = `
+    <p>Empleado guardado con número <strong id="numero">${json.id}</strong></p>
+    <a href="form.html">Nuevo empleado</a>`;
+}
+</script>
+</body>
+</html>
